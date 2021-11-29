@@ -57,10 +57,12 @@ public abstract class BeanDefinitionReaderUtils {
 	public static AbstractBeanDefinition createBeanDefinition(
 			@Nullable String parentName, @Nullable String className, @Nullable ClassLoader classLoader) throws ClassNotFoundException {
 
+		// 创建存放BeanDefinition的实例
 		GenericBeanDefinition bd = new GenericBeanDefinition();
 		bd.setParentName(parentName);
 		if (className != null) {
 			if (classLoader != null) {
+				// 设置bean的全限定 class名
 				bd.setBeanClass(ClassUtils.forName(className, classLoader));
 			}
 			else {
@@ -162,12 +164,13 @@ public abstract class BeanDefinitionReaderUtils {
 			throws BeanDefinitionStoreException {
 
 		// Register bean definition under primary name.
+		//拿到对应的beanName 就是我们前面定义的id的名字  <bean id="user" 。。。> beanName就是这里的user
 		String beanName = definitionHolder.getBeanName();
-		// 注册这个 Bean
+		// 通过beanName ，注册BeanDefinition
 		registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
 
 		// Register aliases for bean name, if any.
-		// 如果配置有别名的话，也要根据别名全部注册一遍
+		// 如果有别名，则通过别名注册
 		String[] aliases = definitionHolder.getAliases();
 		if (aliases != null) {
 			for (String alias : aliases) {

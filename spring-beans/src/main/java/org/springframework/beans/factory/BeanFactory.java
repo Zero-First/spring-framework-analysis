@@ -113,6 +113,27 @@ import org.springframework.lang.Nullable;
  * @see DisposableBean#destroy
  * @see org.springframework.beans.factory.support.RootBeanDefinition#getDestroyMethodName
  */
+/*
+ 	BeanFactory的顶级接口
+
+	Bean工厂实现应该尽可能地支持标准Bean生命周期接口。全套初始化方法及其标准顺序为:
+	1. BeanNameAware's setBeanName
+	2. BeanClassLoaderAware's setBeanClassLoader
+	3. BeanFactoryAware's setBeanFactory
+	4. EnvironmentAware's setEnvironment
+	5. EmbeddedValueResolverAware's setEmbeddedValueResolver
+	6. ResourceLoaderAware's setResourceLoader (only applicable when running in an application context)
+	7. ApplicationEventPublisherAware's setApplicationEventPublisher (only applicable when running in an application context)
+	8. MessageSourceAware's setMessageSource (only applicable when running in an application context)
+	9. ApplicationContextAware's setApplicationContext (only applicable when running in an application context)
+	10.ServletContextAware's setServletContext (only applicable when running in a web application context)
+	11.postProcessBeforeInitialization methods of BeanPostProcessors
+	12.InitializingBean's afterPropertiesSet
+	13.a custom init-method definition
+	14.postProcessAfterInitialization methods of BeanPostProcessors
+
+	BeanFactory表示Bean工厂，所以很明显，BeanFactory会负责创建Bean，并且提供获取Bean的API
+ */
 public interface BeanFactory {
 
 	/**
@@ -120,6 +141,14 @@ public interface BeanFactory {
 	 * beans <i>created</i> by the FactoryBean. For example, if the bean named
 	 * {@code myJndiObject} is a FactoryBean, getting {@code &myJndiObject}
 	 * will return the factory, not the instance returned by the factory.
+	 */
+	/*
+		dereference，取消引用
+		用于解除对FactoryBean实例的引用，并将其与FactoryBean创建的bean区分开来。
+		例如，如果名为myJndiObject的bean是一个FactoryBean，
+		那么get(&myJndiObject)将返回工厂，而不是工厂返回的实例。
+
+		转义符"&"用来获取FactoryBean本身
 	 */
 	String FACTORY_BEAN_PREFIX = "&";
 
@@ -347,7 +376,9 @@ public interface BeanFactory {
 	 * @return the aliases, or an empty array if none
 	 * @see #getBean
 	 */
-	//得到别名
+	/*
+		得到别名
+	 */
 	String[] getAliases(String name);
 
 }

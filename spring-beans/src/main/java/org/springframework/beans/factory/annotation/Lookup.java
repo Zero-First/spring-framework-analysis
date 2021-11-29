@@ -53,6 +53,11 @@ import java.lang.annotation.Target;
  * @see org.springframework.beans.factory.BeanFactory#getBean(Class, Object...)
  * @see org.springframework.beans.factory.BeanFactory#getBean(String, Object...)
  */
+/*
+@Lookup方法注入
+在实例化时，如果判断出来当前BeanDefinition中没有LookupOverride，那就直接用构造方法反射得到一个实例对象。
+如果存在LookupOverride对象，也就是类中存在@Lookup注解了的方法，那就会生成一个代理对象。
+ */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
@@ -65,4 +70,20 @@ public @interface Lookup {
 	 */
 	String value() default "";
 
+	/**
+	 * @Component
+	 * public class UserService {
+	 * 	private OrderService orderService;
+	 *
+	 * 	public void test() {
+	 * 	OrderService orderService = createOrderService();
+	 * 		System.out.println(orderService);
+	 *        }
+	 *
+	 *    @Lookup("orderService")
+	 *    public OrderService createOrderService() {
+	 * 		return null;
+	 *    }
+	 * }
+	 */
 }

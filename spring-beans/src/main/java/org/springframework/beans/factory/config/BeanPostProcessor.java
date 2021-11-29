@@ -20,7 +20,9 @@ import org.springframework.beans.BeansException;
 import org.springframework.lang.Nullable;
 
 /**
- * Factory hook that allows for custom modification of new bean instances,
+ * 允许自定义修改新的bean实例 工厂钩子
+ * BeanPostProcessor是在spring容器加载了bean的定义文件，并且实例化bean之后执行的。
+ * <p>Factory hook that allows for custom modification of new bean instances,
  * e.g. checking for marker interfaces or wrapping them with proxies.
  *
  * <p>ApplicationContexts can autodetect BeanPostProcessor beans in their
@@ -39,6 +41,38 @@ import org.springframework.lang.Nullable;
  * @see DestructionAwareBeanPostProcessor
  * @see ConfigurableBeanFactory#addBeanPostProcessor
  * @see BeanFactoryPostProcessor
+ */
+/*
+	BeanPostProcessor是在spring容器加载了bean的定义文件，并且实例化bean之后执行的。
+	BeanPostProcessor的执行顺序是在BeanFactoryPostProcessor之后。
+	这个接口只有两个方法，他允许自定义的去修改spring给我们创建的类。
+	在Bean初始化时处理  有before after
+	AOP就是在这个阶段去实现的
+
+	spring中，有内置的一些BeanPostProcessor实现类，例如：
+	支持@Resource注解的注入
+	org.springframework.context.annotation.CommonAnnotationBeanPostProcessor：
+	支持@Required注解的注入
+	org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor：
+	支持@Autowired注解的注入
+	org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor：
+	支持@PersistenceUnit和@PersistenceContext注解的注入
+	org.springframework.orm.jpa.support.PersistenceAnnotationBeanPostProcessor：
+	用来为bean注入ApplicationContext等容器对象
+	org.springframework.context.support.ApplicationContextAwareProcessor：
+
+总结 BeanPostProcessor
+1. InstantiationAwareBeanPostProcessor.postProcessBeforeInstantiation()
+2. 实例化
+3. MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition()
+4. InstantiationAwareBeanPostProcessor.postProcessAfterInstantiation()
+5. 自动注入
+6. InstantiationAwareBeanPostProcessor.postProcessProperties()
+7. Aware对象
+8. BeanPostProcessor.postProcessBeforeInitialization()
+9. 初始化
+10. BeanPostProcessor.postProcessAfterInitialization()
+
  */
 public interface BeanPostProcessor {
 
@@ -80,6 +114,10 @@ public interface BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
 	 * @see org.springframework.beans.factory.FactoryBean
+	 */
+	/*
+		Spring AOP  动态代理
+		就是在BeanPostProcessor的PostProcessorAfterInitialization之后处理的，与Spring IoC解耦
 	 */
 	@Nullable
 	default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {

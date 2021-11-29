@@ -35,6 +35,12 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
  * @since 2.5
  * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#getMergedBeanDefinition
  */
+/*
+Bean对象实例化出来之后，接下来就应该给对象的属性赋值了。在真正给属性赋值之前，Spring又
+提供了一个扩展点
+MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition()，可以对此时的
+BeanDefinition进行加工
+ */
 public interface MergedBeanDefinitionPostProcessor extends BeanPostProcessor {
 
 	/**

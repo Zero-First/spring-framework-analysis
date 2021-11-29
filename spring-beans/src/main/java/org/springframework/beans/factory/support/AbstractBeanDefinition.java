@@ -16,14 +16,6 @@
 
 package org.springframework.beans.factory.support;
 
-import java.lang.reflect.Constructor;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-
 import org.springframework.beans.BeanMetadataAttributeAccessor;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
@@ -36,6 +28,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+
+import java.lang.reflect.Constructor;
+import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Base class for concrete, full-fledged {@link BeanDefinition} classes,
@@ -53,6 +49,14 @@ import org.springframework.util.StringUtils;
  * @see GenericBeanDefinition
  * @see RootBeanDefinition
  * @see ChildBeanDefinition
+ */
+/*
+	AbstractBeanDefinition的常见实现类 ,大部分的通用属性都保存在了AbstractBeanDefinition
+	RootBeanDefinition
+	ChildBeanDefinition
+	GenericBeanDefinition
+		ScannedGenericBeanDefinition	使用scan扫描的bean
+		AnnotatedGenericBeanDefinition  使用@Configuration 注解标记配置类
  */
 @SuppressWarnings("serial")
 public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccessor
@@ -140,65 +144,140 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Nullable
 	private volatile Object beanClass;
 
+	/**
+	 *	bean的作用范围，对应bean的scope属性
+	 */
 	@Nullable
 	private String scope = SCOPE_DEFAULT;
 
+	/**
+	 *	是否是抽象，来自bean的abstract属性
+	 */
 	private boolean abstractFlag = false;
 
+	/**
+	 *  是否延迟加载，来自bean的lazy-init属性
+	 */
 	private boolean lazyInit = false;
 
+	/**
+	 *  自动注入模式，对应bean的autowire属性
+	 */
 	private int autowireMode = AUTOWIRE_NO;
 
+	/**
+	 * 依赖检查
+	 */
 	private int dependencyCheck = DEPENDENCY_CHECK_NONE;
 
+	/**
+	 * 用来表示一个bean的实例化依靠另一个bean先实例化，对应bean的depends属性
+	 */
 	@Nullable
 	private String[] dependsOn;
 
+	/**
+	 *  是否作为bean自动注入的选项
+	 */
 	private boolean autowireCandidate = true;
 
+	/**
+	 * 自动装配时，出现多个候选者是，作为首选， 对应bean的primary属性
+	 */
 	private boolean primary = false;
 
+	/**
+	 *	用于记录Qualifier，对应bean的子元素 qualifier
+	 */
 	private final Map<String, AutowireCandidateQualifier> qualifiers = new LinkedHashMap<>();
 
 	@Nullable
 	private Supplier<?> instanceSupplier;
 
+	/**
+	 *  允许访问非公开的构造器和方法，程序设置
+	 */
 	private boolean nonPublicAccessAllowed = true;
 
+	/**
+	 *	是否以一种宽松的模式 解析构造函数，默认为true
+	 */
 	private boolean lenientConstructorResolution = true;
 
+	/**
+	 *	工厂方法中使用的bean名称，对应bean的factory-bean属性
+	 */
 	@Nullable
 	private String factoryBeanName;
 
+	/**
+	 *	调用的工厂方法，对应bean的factory-method属性
+	 */
 	@Nullable
 	private String factoryMethodName;
 
+	/**
+	 *	记录构造函数注入属性
+	 */
 	@Nullable
 	private ConstructorArgumentValues constructorArgumentValues;
 
+	/**
+	 *	普通属性集合
+	 */
 	@Nullable
 	private MutablePropertyValues propertyValues;
 
+	/**
+	 *	方法重写的持有者，记录lookup-method、replaced-method元素
+	 */
 	@Nullable
 	private MethodOverrides methodOverrides;
 
+	/**
+	 *	初始化方法，对应bean的init-method属性
+	 */
 	@Nullable
 	private String initMethodName;
 
+	/**
+	 *	销毁方法，对应bean的destroy-method属性
+	 */
 	@Nullable
 	private String destroyMethodName;
 
+	/**
+	 *	是否执行init-method方法，默认为true
+	 */
 	private boolean enforceInitMethod = true;
 
+	/**
+	 *	是否执行destroy-method，默认为true
+	 */
 	private boolean enforceDestroyMethod = true;
 
+	/** synthetic 综合。。。
+	 *	是否是用户定义的，而不是应用程序本身定义的，创建AOP时为true
+	 */
 	private boolean synthetic = false;
 
+	/**
+	 *	定义这个bean的应用，
+	 *	ROLE_APPLICATION = 0表示这个 Bean 是用户自己定义的 Bean；
+	 * 	ROLE_SUPPORT = 1 表示这个 Bean 是某些复杂配置的支撑部分；
+	 * 	ROLE_INFRASTRUCTURE = 2 表示这是一个 Spring 内部的 Bean，
+	 */
 	private int role = BeanDefinition.ROLE_APPLICATION;
 
+	/**
+	 *	bean的描述信息，对应bean元素的子元素description
+	 */
 	@Nullable
 	private String description;
 
+	/**
+	 *	这个bean定义的资源
+	 */
 	@Nullable
 	private Resource resource;
 
@@ -1097,7 +1176,19 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * @param mo the MethodOverride object to validate
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
+	/*
+		在Spring 配置中存在lookup-method 和replace-method 两个配置功能，
+		而这两个配置的加载其实就是将配置统一存放在BeanDefinition 中的methodOverrides 属性里，
+		这两个功能实现原理其实是在bean 实例化的时候如果检测到存在methodOverrides 属性，
+		会动态地为当前bean 生成代理并使用对应的拦截器为bean 做增强处理，
+		相关逻辑实现在bean 的实例化部分
+
+		Spring 将一部分匹配工作在这里完成了，如果当前类中的方法只有一个，那么就设
+		置重载眩方法没有被重载，这样在后续调用的时候便可以直接使用找到的方法，而不需要进行
+		方法的参数匹配验证了，而且还可以提前对方法存在性进行验证，正可谓一箭双雕
+	 */
 	protected void prepareMethodOverride(MethodOverride mo) throws BeanDefinitionValidationException {
+		// 获取对应类中 对应的方法名个数
 		int count = ClassUtils.getMethodCountForName(getBeanClass(), mo.getMethodName());
 		if (count == 0) {
 			throw new BeanDefinitionValidationException(
@@ -1106,6 +1197,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 		}
 		else if (count == 1) {
 			// Mark override as not overloaded, to avoid the overhead of arg type checking.
+			// 将重载标记为未重载，以避免arg类型检查的开销。
+			// 提前检查，count=1 代表没有重载。后面直接跳过
 			mo.setOverloaded(false);
 		}
 	}

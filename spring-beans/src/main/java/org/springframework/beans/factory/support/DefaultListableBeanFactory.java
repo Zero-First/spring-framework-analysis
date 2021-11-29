@@ -74,6 +74,39 @@ import java.util.stream.Stream;
  * @see #getBean
  * @see #resolveDependency
  */
+/*
+DefaultListableBeanFactory类
+	BeanFactory接口存在一个非常重要的实现类是 DefaultListableBeanFactory，非常核心的
+	支持很多功能，可以通过查看DefaultListableBeanFactory的类继承实现结构来看
+1. AliasRegistry：支持别名功能，一个名字可以对应多个别名
+2. BeanDefinitionRegistry：可以注册、保存、移除、获取某个BeanDefinition
+3. BeanFactory：Bean工厂，可以根据某个bean的名字、或类型、或别名获取某个Bean对象
+4. SingletonBeanRegistry：可以直接注册、获取某个单例Bean
+5. SimpleAliasRegistry：它是一个类，实现了AliasRegistry接口中所定义的功能，支持别名功能
+6. ListableBeanFactory：在BeanFactory的基础上，增加了其他功能，可以获取所有BeanDefinition的beanNames，可以根据某个类型获取对应的beanNames，可以根据某个类型获取{类型：对应的Bean}的映射关系
+7. HierarchicalBeanFactory：在BeanFactory的基础上，添加了获取父BeanFactory的功能. getParentBeanFactory();
+8. DefaultSingletonBeanRegistry：它是一个类，实现了SingletonBeanRegistry接口，拥有了直接注册、获取某个单例Bean的功能
+9. ConfigurableBeanFactory：在HierarchicalBeanFactory和SingletonBeanRegistry的基础上，
+	添加了设置父BeanFactory、类加载器（表示可以指定某个类加载器进行类的加载）、设置Spring EL表达式解析器（表示该BeanFactory可以解析EL表达式）、
+	设置类型转化服务（表示该BeanFactory可以进行类型转化）、可以添加BeanPostProcessor（表示该BeanFactory支持Bean的后置处理器），
+	可以合并BeanDefinition，可以销毁某个Bean等等功能
+10. FactoryBeanRegistrySupport：支持了FactoryBean的功能
+11. AutowireCapableBeanFactory：是直接继承了BeanFactory，在BeanFactory的基础上，支持在创建Bean的过程中能对Bean进行自动装配
+12. AbstractBeanFactory：实现了ConfigurableBeanFactory接口，继承了FactoryBeanRegistrySupport，这个BeanFactory的功能已经很全面了，但是不能自动装配和获取beanNames
+13. ConfigurableListableBeanFactory：继承了ListableBeanFactory、AutowireCapableBeanFactory、ConfigurableBeanFactory
+14. AbstractAutowireCapableBeanFactory：继承了AbstractBeanFactory，实现了AutowireCapableBeanFactory，拥有了自动装配的功能
+15. DefaultListableBeanFactory：
+		继承了AbstractAutowireCapableBeanFactory，
+		实现了ConfigurableListableBeanFactory接口和BeanDefinitionRegistry接口，
+	所以DefaultListableBeanFactory的功能很强大
+
+ *
+ * XmlBeanFactory 继承自 DefaultListableBeanFactory ，
+ * 而DefaultListableBeanFactory 是整个bean加载的核心部分，是Spring 注册及加载bean 的默认实现，
+ * 	而对于XmBeanFactory 与 DefaultListableBeanFactory 不同的地方
+ * 		其实是在XmlBeanFactory 中使用了自定义的XML 读取器 XmlBeanDefinitionReader ，实现了个性化的BeanDefinitionReader读取，
+ * 		DefaultListableBeanFactory 继承了AbstractAutowireCapableBeanFactory 并实现了ConfigurableListableBeanFactory及 BeanDefinitionRegistry 接口
+ */
 @SuppressWarnings("serial")
 public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory
 		implements ConfigurableListableBeanFactory, BeanDefinitionRegistry, Serializable {
@@ -118,7 +151,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	private final Map<Class<?>, Object> resolvableDependencies = new ConcurrentHashMap<>(16);
 
 	/** Map of bean definition objects, keyed by bean name. */
-	//Bean定义对象的映射，以Bean名称为键
+	//Bean定义对象的映射，以Bean名称为键  IoC容器
 	private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
 
 	/** Map of singleton and non-singleton bean names, keyed by dependency type. */
@@ -396,7 +429,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	//---------------------------------------------------------------------
 	// Implementation of ListableBeanFactory interface
 	//---------------------------------------------------------------------
-
+	// 检查这个beanDefinitionMap是否包含具有给定名称的bean定义。
 	@Override
 	public boolean containsBeanDefinition(String beanName) {
 		Assert.notNull(beanName, "Bean name must not be null");
@@ -779,13 +812,25 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		// this.beanDefinitionNames 保存了所有的 beanNames
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
+		/**
+		 下面遍历beanDefinitionNames这个list对象中的BeanName，循环调用getBean(beanName)方法
+		 该方法实际上就是创建Bean 并递归构建Bean间的依赖关系，
+		 getBean(beanName)方法最终会调用doGetBean(name,null,null,false)
+		 *
+		 */
 		// Trigger initialization of all non-lazy singleton beans...
 		for (String beanName : beanNames) {
 			// 合并父 Bean 中的配置，主意<bean id="" class="" parent="" /> 中的 parent属性
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
-			// 不是抽象类、是单例的且不是懒加载的
+			//判断bd  非抽象、单例、非懒加载   // 不是抽象类、是单例的且不是懒加载的
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
-				// 处理 FactoryBean
+				//判断是不是FactoryBean
+				/**
+				 * 	FactoryBean介绍
+				 * 	一个普通bean 实现FactoryBean接口  会调用getObject方法返回的bean; 此时就是一个特殊的bean
+				 * 	[应用场景]
+				 * 		如果需要获取原来对象，加‘&’; 在Mybatis集成时，可以通过&beanName 获取
+				 */
 				if (isFactoryBean(beanName)) {
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
@@ -802,13 +847,19 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							isEagerInit = (factory instanceof SmartFactoryBean &&
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
+						// 不是FactoryBean的直接使用此方法进行初始化
 						if (isEagerInit) {
-							// 不是FactoryBean的直接使用此方法进行初始化
 							getBean(beanName);
 						}
 					}
 				}
 				else {
+					/*
+						非工厂bean
+						对于非抽象类、非延迟初始化的单例bean，
+						在spring容器启动的时候调用getBean方法来实例化bean，并进行相关初始化工作，
+						getBean方法最终调用AbstractAutowireCapableBeanFactory.doCreateBean方法
+					 */
 					getBean(beanName);
 				}
 			}
@@ -838,6 +889,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	// Implementation of BeanDefinitionRegistry interface
 	//---------------------------------------------------------------------
 
+	// 向IoC容器中注册解析的BeanDefinition
 	@Override
 	public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
 			throws BeanDefinitionStoreException {
@@ -845,8 +897,15 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		Assert.hasText(beanName, "Bean name must not be empty");
 		Assert.notNull(beanDefinition, "BeanDefinition must not be null");
 
+		//校验解析的BeanDefinition
 		if (beanDefinition instanceof AbstractBeanDefinition) {
 			try {
+				// 验证这个bean定义
+				/*
+					注册前的最后一次校验，这里的检验不同于之前的XML文件校验
+					主要是对于AbstractBeanDefinition属性中的methodOverrides校验
+					校验methodOverrides是否与工厂方法并存  或者 methodOverrides对应的方法根本不存在
+				 */
 				((AbstractBeanDefinition) beanDefinition).validate();
 			}
 			catch (BeanDefinitionValidationException ex) {
@@ -854,16 +913,19 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 						"Validation of bean definition failed", ex);
 			}
 		}
-		// 所有的 Bean 注册后都会被放入到这个beanDefinitionMap 中，查看是否已存在这个bean
+		// 首先从beanDefinitionMap获取bean，看是否存在
 		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
 		if (existingDefinition != null) {
+			// beanDefinitionMap 中没有 beanDefinition
 			if (!isAllowBeanDefinitionOverriding()) {
-				// 如果不允许覆盖的话，抛异常
+				// 如果已经创建BeanDefinition 并且【allowBeanDefinitionOverriding默认是true】 不是可重复出现的bean ， 则报错 抛出异常信息
 				throw new BeanDefinitionOverrideException(beanName, beanDefinition, existingDefinition);
 			}
 			else if (existingDefinition.getRole() < beanDefinition.getRole()) {
+				// 0 ROLE_APPLICATION表示这个 Bean 是用户自己定义的 Bean；
+				// 1 ROLE_SUPPORT 表示这个 Bean 是某些复杂配置的支撑部分；
+				// 2 ROLE_INFRASTRUCTURE 表示这是一个 Spring 内部的 Bean
 				// e.g. was ROLE_APPLICATION, now overriding with ROLE_SUPPORT or ROLE_INFRASTRUCTURE
-				// log...用同等的 Bean 覆盖旧的 Bean
 				if (logger.isInfoEnabled()) {
 					logger.info("Overriding user-defined bean definition for bean '" + beanName +
 							"' with a framework-generated bean definition: replacing [" +
@@ -871,7 +933,6 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}
 			}
 			else if (!beanDefinition.equals(existingDefinition)) {
-				// 用新的 Bean 覆盖旧的 Bean
 				if (logger.isDebugEnabled()) {
 					logger.debug("Overriding bean definition for bean '" + beanName +
 							"' with a different definition: replacing [" + existingDefinition +
@@ -885,15 +946,19 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							"] with [" + beanDefinition + "]");
 				}
 			}
-			// 覆盖
+			// 将解析完成的 BeanDefinition 放入Map中
 			this.beanDefinitionMap.put(beanName, beanDefinition);
 		}
 		else {
-			// 判断是否已经有其他的 Bean 开始初始化了.注意，"注册Bean" 这个动作结束，
-			// Bean 依然还没有初始化 在 Spring 容器启动的最后，会 预初始化 所有的 singleton beans
+			//检查该工厂的bean创建阶段是否已经开始，即是否有任何bean在此期间被标记为已创建。
 			if (hasBeanCreationStarted()) {
 				// Cannot modify startup-time collection elements anymore (for stable iteration)
+				// 注册的过程需要保存数据的一致性，使用synchronized 同步
+				/*
+					因为beanDefinitionMap是全局变量，这里定会存在并发访问的情况
+				 */
 				synchronized (this.beanDefinitionMap) {
+					//将一个一个的beanDefinition放入到一个Map中（即为IoC容器）
 					this.beanDefinitionMap.put(beanName, beanDefinition);
 					List<String> updatedDefinitions = new ArrayList<>(this.beanDefinitionNames.size() + 1);
 					updatedDefinitions.addAll(this.beanDefinitionNames);
@@ -904,17 +969,17 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 			else {
 				// Still in startup registration phase
-				// 将 BeanDefinition 放到这个 map 中，这个 map 保存了所有的 BeanDefinition
+				// 仍在启动注册阶段  添加key-value形式的bean定义信息
 				this.beanDefinitionMap.put(beanName, beanDefinition);
-				// 这是个 ArrayList，所以会按照 bean 配置的顺序保存每一个注册的 Bean 的名字
 				this.beanDefinitionNames.add(beanName);
-				// 这是个 LinkedHashSet，代表的是手动注册的 singleton bean
 				removeManualSingletonName(beanName);
 			}
 			this.frozenBeanDefinitionNames = null;
 		}
 
+		// 如果已经存在 或者 包含beanName
 		if (existingDefinition != null || containsSingleton(beanName)) {
+			// 重置所有beanName对应的缓存
 			resetBeanDefinition(beanName);
 		}
 	}
@@ -1132,6 +1197,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		descriptor.initParameterNameDiscovery(getParameterNameDiscoverer());
 		if (Optional.class == descriptor.getDependencyType()) {
+			// ObjectFactory类注入的特殊处理
 			return createOptionalDependency(descriptor, requestingBeanName);
 		}
 		else if (ObjectFactory.class == descriptor.getDependencyType() ||
@@ -1145,6 +1211,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(
 					descriptor, requestingBeanName);
 			if (result == null) {
+				// 处理通用逻辑
 				result = doResolveDependency(descriptor, requestingBeanName, autowiredBeanNames, typeConverter);
 			}
 			return result;
@@ -1163,6 +1230,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 
 			Class<?> type = descriptor.getDependencyType();
+			// 用于支持Spring中的@Value注解
 			Object value = getAutowireCandidateResolver().getSuggestedValue(descriptor);
 			if (value != null) {
 				if (value instanceof String) {

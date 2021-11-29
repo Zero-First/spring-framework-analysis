@@ -16,13 +16,6 @@
 
 package org.springframework.beans.factory.support;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedExceptionAction;
-
 import org.springframework.beans.BeanInstantiationException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.BeanFactory;
@@ -30,6 +23,13 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedExceptionAction;
 
 /**
  * Simple object instantiation strategy for use in a BeanFactory.
@@ -56,11 +56,21 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		return currentlyInvokedFactoryMethod.get();
 	}
 
-
+	/*
+		实例化 策略
+		核心方法instantiateClass   BeanUtils.instantiateClass(constructorToUse);
+	 */
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
+		/*
+			如果有需要覆盖 或者动态替换的方法
+			则当然需要使用cglib进行动态代理，因为可以在创建代理的同时将动态方法织入类中
+			但是如果没有需要动态改变得方法，为了方便直接反射就可以了
+		 */
+		// bd.getMethodOverrides()为空也就是用户没有使用replace 或者lookup 的配置方法，那么直接使用反射的方式
 		if (!bd.hasMethodOverrides()) {
+			// 构造器
 			Constructor<?> constructorToUse;
 			synchronized (bd.constructorArgumentLock) {
 				constructorToUse = (Constructor<?>) bd.resolvedConstructorOrFactoryMethod;
@@ -84,10 +94,17 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 					}
 				}
 			}
+			// 实例化Bean
+			// 利用构造方法进行实例化
 			return BeanUtils.instantiateClass(constructorToUse);
 		}
 		else {
+			/*
+				使用动态代理的方式将包含两个特性所对应的逻辑的拦截增强器设置进去，
+			 */
 			// Must generate CGLIB subclass.
+			// 必须生成CGLIB子类。
+			// 存在方法覆写，利用 CGLIB 来完成实例化，需要依赖于 CGLIB 生成子类，这里就不展开了
 			return instantiateWithMethodInjection(bd, beanName, owner);
 		}
 	}
