@@ -73,13 +73,16 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * Set the config locations for this application context.
 	 * <p>If not set, the implementation may use a default as appropriate.
 	 */
-	//setConfigLocations方法的主要工作有两个：
-	// 创建环境对象ConfigurableEnvironment和处理ClassPathXmlApplicationContext传入的字符串中的占位符
 	public void setConfigLocations(@Nullable String... locations) {
 		if (locations != null) {
 			Assert.noNullElements(locations, "Config locations must not be null");
 			this.configLocations = new String[locations.length];
 			for (int i = 0; i < locations.length; i++) {
+				//解析给定路径
+				/**
+				 *  如果数组中包含特殊符号，如$｛var｝，那么
+				 * 在resolvePath 中会搜寻匹配的系统变量并替换。
+				 */
 				this.configLocations[i] = resolvePath(locations[i]).trim();
 			}
 		}
@@ -123,9 +126,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * @return the resolved file path
 	 * @see org.springframework.core.env.Environment#resolveRequiredPlaceholders(String)
 	 */
-	protected String resolvePath(String path) {
-		/*	这里getEnironment()就涉及到了创建环境变量相关的操作了
-		获取环境变量*/
+	protected String resolvePath(String path) { //getEnvironment() 获取环境信息
 		return getEnvironment().resolveRequiredPlaceholders(path);
 	}
 

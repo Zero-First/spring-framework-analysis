@@ -49,9 +49,12 @@ import org.springframework.util.Assert;
  * @see #getResourceByPath
  * @see GenericApplicationContext
  */
+/*
+ 	ClassPathXmlApplicationContext也是继承了AbstractApplicationContext，
+ 	但是相对于AnnotationConfigApplicationContext而言，功能没有AnnotationConfigApplicationContext强大，比如不能注册BeanDefinition
+ */
 public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContext {
 
-	//配置文件数组
 	@Nullable
 	private Resource[] configResources;
 
@@ -72,7 +75,6 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	 * @see #setConfigLocations
 	 * @see #afterPropertiesSet()
 	 */
-	// 指定ApplicationContext的父容器
 	public ClassPathXmlApplicationContext(ApplicationContext parent) {
 		super(parent);
 	}
@@ -82,6 +84,11 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	 * from the given XML file and automatically refreshing the context.
 	 * @param configLocation resource location
 	 * @throws BeansException if context creation failed
+	 */
+	/*
+	 * 创建一个新的ClassPathXmlApplicationContext，加载从给定的XML文件，并自动刷新上下文。
+	 *  这里是spring-bean01.xml 可以传入多个xml文件，String类型的数组
+	 *  refresh一直为true 自动刷新
 	 */
 	public ClassPathXmlApplicationContext(String configLocation) throws BeansException {
 		this(new String[] {configLocation}, true, null);
@@ -141,8 +148,9 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 			throws BeansException {
 
 		super(parent);
-		// 根据提供的路径，处理成配置文件数组(以分号、逗号、空格、tab、换行符分割)
+		//configLocations  配置资源xml的位置
 		setConfigLocations(configLocations);
+		//保证只会初始化一次
 		if (refresh) {
 			refresh();
 		}

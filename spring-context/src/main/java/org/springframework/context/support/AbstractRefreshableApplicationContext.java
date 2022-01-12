@@ -16,14 +16,14 @@
 
 package org.springframework.context.support;
 
-import java.io.IOException;
-
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextException;
 import org.springframework.lang.Nullable;
+
+import java.io.IOException;
 
 /**
  * Base class for {@link org.springframework.context.ApplicationContext}
@@ -123,10 +123,8 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
 		/*
-			首先检查当前上下文是否存在BeanFactory，
+			首先检查当前上下文 是否存在BeanFactory，
 			如果存在BeanFactory，先销毁Bean和BeanFactory，然后创建BeanFactory
-			// 判断当前ApplicationContext是否存在BeanFactory，如果存在的话就销毁所有 Bean，关闭 BeanFactory
-   			// 注意，一个应用可以存在多个BeanFactory，这里判断的是当前ApplicationContext是否存在BeanFactory
 		 */
 		if (hasBeanFactory()) {
 			destroyBeans();
@@ -134,51 +132,54 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 		}
 		try {
 			/*
-			// 初始化DefaultListableBeanFactory
-				创建一个空的BeanFactory
+				创建一个 DefaultListableBeanFactory类型 的BeanFactory
 				重点在loadBeanDefinitions(beanFactory)方法
 			 */
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
+			// 设置BeanFactory的一些基本信息  序列化id; 如果需要的话， 让这个Bean Fact 。ry 从id 反序列4四U Bean Factory 对象
 			beanFactory.setSerializationId(getId());
-			// 设置 BeanFactory 的两个配置属性：是否允许 Bean 覆盖、是否允许循环引用
+			/*
+				自定义两个属性
+				allowBeanDefinitionOverriding 允许BeanDefinition覆盖
+				allowCircularReferences 允许循环依赖 默认都是true
+			 */
 			customizeBeanFactory(beanFactory);
-			// 加载 Bean 到 BeanFactory 中
 			/**
 			 初始化DocumentReader ， 并进行XML文件读取及解析
-			 核心步骤loadBeanDefinitions(beanFactory); 加载Bean的定义信息，从XML、注解形式等 解析出bean，并放入BeanDefinitionMap
-			 加载BeanDefinition
-			 这个过程会有很多层，一直调用相同的方法名 loadBeanDefinitions 是重载的，参数类型不同
-			 不同的方式，选择不同的Reader
-			 1.xml文件   {@link AbstractXmlApplicationContext}AbstractXmlApplicationContext.loadBeanDefinitions
-			 2.注解方式   AnnotationConfigWebApplicationContext
-			 3.GroovyWeb   GroovyWebApplicationContext
-			 4.web环境的xml XmlWebApplicationContext
+			 	核心步骤loadBeanDefinitions(beanFactory); 加载Bean的定义信息，从XML、注解形式等 解析出bean，并放入BeanDefinitionMap
+			 	加载BeanDefinition
+			 	这个过程会有很多层，一直调用相同的方法名 loadBeanDefinitions 是重载的，参数类型不同
+				 不同的方式，选择不同的Reader
+				 1.xml文件   {@link AbstractXmlApplicationContext}AbstractXmlApplicationContext.loadBeanDefinitions
+				 2.注解方式   AnnotationConfigWebApplicationContext
+				 3.GroovyWeb   GroovyWebApplicationContext
+				 4.web环境的xml XmlWebApplicationContext
 
-			 调用过程
-			 loadBeanDefinitions(beanFactory);从BeanFactory加载 bd
-			 生成读取器后 ，在bdr中设置一些属性 ，Environment环境、资源加载器ResourceLoader、实体处理类EntityResolver
-			 初始化bdr，  initBeanDefinitionReader(beanDefinitionReader);
-			 loadBeanDefinitions(beanDefinitionReader);
-			 reader.loadBeanDefinitions(configResources);
-			 加载配置资源
-			 reader.loadBeanDefinitions(configLocations);
-			 加载配置文件，返回配置文件的个数
-			 loadBeanDefinitions(location);
-			 获取资源 Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
-			 loadBeanDefinitions(resources);
-			 遍历加载resource
-			 loadBeanDefinitions(resource);
-			 从指定的XML文件加载bean定义。
-			 loadBeanDefinitions(new EncodedResource(resource));
-			 doLoadBeanDefinitions(inputSource, encodedResource.getResource());
-			 将inputSource加载成Document
-			 doLoadDocument(inputSource, resource); // 主要是验证 DTD XSD
-			 注册包含在给定DOM文档中的bean定义。
-			 registerBeanDefinitions(doc, resource);
-			 创建BeanDefinitionDocumentReader，注册BeanDefinition
-			 documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
-			 doRegisterBeanDefinitions(doc.getDocumentElement());
-			 在给定的根元素<beans/>中注册每个bean定义
+			 	调用过程
+			 	loadBeanDefinitions(beanFactory);从BeanFactory加载 bd
+			 		生成读取器后 ，在bdr中设置一些属性 ，Environment环境、资源加载器ResourceLoader、实体处理类EntityResolver
+					初始化bdr，  initBeanDefinitionReader(beanDefinitionReader);
+			 		loadBeanDefinitions(beanDefinitionReader);
+						reader.loadBeanDefinitions(configResources);
+			 				加载配置资源
+						reader.loadBeanDefinitions(configLocations);
+							加载配置文件，返回配置文件的个数
+							loadBeanDefinitions(location);
+			 					获取资源 Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
+			 					loadBeanDefinitions(resources);
+			 						遍历加载resource
+			 						loadBeanDefinitions(resource);
+			 							从指定的XML文件加载bean定义。
+			 							loadBeanDefinitions(new EncodedResource(resource));
+			 								doLoadBeanDefinitions(inputSource, encodedResource.getResource());
+			 									将inputSource加载成Document
+			 									doLoadDocument(inputSource, resource); // 主要是验证 DTD XSD
+												注册包含在给定DOM文档中的bean定义。
+			 									registerBeanDefinitions(doc, resource);
+			 										创建BeanDefinitionDocumentReader，注册BeanDefinition
+			 										documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
+			 											doRegisterBeanDefinitions(doc.getDocumentElement());
+			 											在给定的根元素<beans/>中注册每个bean定义
 			 */
 			loadBeanDefinitions(beanFactory);
 			synchronized (this.beanFactoryMonitor) {
@@ -219,7 +220,7 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 			return (this.beanFactory != null);
 		}
 	}
-
+    // 就是获取 refreshBeanFactory 方法所创建的 BeanFactory
 	@Override
 	public final ConfigurableListableBeanFactory getBeanFactory() {
 		synchronized (this.beanFactoryMonitor) {
@@ -272,9 +273,23 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * @see DefaultListableBeanFactory#setAllowEagerClassLoading
 	 */
 	protected void customizeBeanFactory(DefaultListableBeanFactory beanFactory) {
+		/*
+			设置自定义的allowBeanDefinitionOverriding
+		 	是否允许bean定义的覆盖
+			BeanDefinition 的覆盖问题大家也许会碰到，
+			就是在配置文件中定义 bean 时使用了相同的 id 或 name
+			默认情况下，allowBeanDefinitionOverriding 属性为 null，
+			如果在同一配置文件中重复了，会抛错，但是如果不是同一配置文件中，会发生覆盖。
+		 */
 		if (this.allowBeanDefinitionOverriding != null) {
 			beanFactory.setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
 		}
+		/*
+			设置自定义的allowCircularReferences
+			是否允许bean 间的循环依赖
+			A 依赖 B，而 B 依赖 A。或 A 依赖 B，B 依赖 C，而 C 依赖 A
+			默认情况下，Spring 允许循环依赖，当然如果你在 A 的构造方法中依赖 B，在 B 的构造方法中依赖 A 是不行的。
+		 */
 		if (this.allowCircularReferences != null) {
 			beanFactory.setAllowCircularReferences(this.allowCircularReferences);
 		}

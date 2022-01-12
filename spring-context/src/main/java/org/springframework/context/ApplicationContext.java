@@ -57,6 +57,20 @@ import org.springframework.lang.Nullable;
  */
 //中央接口，为应用程序提供配置。
 //在应用程序运行时是只读的，但如果实现支持，则可以重新加载。
+/*
+ApplicationContext继承了ListableBeanFactory和HierarchicalBeanFactory，而ListableBeanFactory和HierarchicalBeanFactory都继承至BeanFactory，
+所以我们可以认为ApplicationContext继承了BeanFactory，相当于苹果继承水果，宝马继承汽车一样，
+ApplicationContext也是BeanFactory的一种，拥有BeanFactory支持的所有功能，
+	不过ApplicationContext比BeanFactory更加强大，ApplicationContext还基础了其他接口，也就表示ApplicationContext还拥有其他功能，
+	比如
+1. EnvironmentCapable：可以获取运行时环境（没有设置运行时环境功能）
+2. ListableBeanFactory：拥有获取beanNames的功能
+3. HierarchicalBeanFactory：拥有获取父BeanFactory的功能
+4. MessageSource：拥有国际化功能
+5. ApplicationEventPublisher：拥有广播事件的功能（没有添加事件监听器的功能）
+6. ResourcePatternResolver：资源加载器，可以一次性获取多个资源（文件资源等等）
+
+ */
 public interface ApplicationContext extends EnvironmentCapable, ListableBeanFactory, HierarchicalBeanFactory,
 		MessageSource, ApplicationEventPublisher, ResourcePatternResolver {
 

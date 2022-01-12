@@ -104,7 +104,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 
 
 	/**
-	 * Create a new GenericApplicationContext.
+	 * Create a new GenericApplicationContext.  //调用GenericApplicationContext构造器 会创建一个DefaultListableBeanFactory对象
 	 * @see #registerBeanDefinition
 	 * @see #refresh
 	 */
@@ -263,10 +263,13 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws IllegalStateException {
+		// CAS 设置将刷新状态置为 true
 		if (!this.refreshed.compareAndSet(false, true)) {
 			throw new IllegalStateException(
 					"GenericApplicationContext does not support multiple refresh attempts: just call 'refresh' once");
 		}
+		// 设置序列id
+		//需要注意的是 this.beanFactory 的实际类型为 DefaultListableBeanFactory。在GenericApplicationContext 的构造函数中进行了对象创建或指定
 		this.beanFactory.setSerializationId(getId());
 	}
 

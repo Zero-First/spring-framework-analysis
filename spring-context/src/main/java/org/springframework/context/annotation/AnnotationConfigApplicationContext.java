@@ -51,7 +51,20 @@ import java.util.function.Supplier;
  * @see org.springframework.context.support.GenericXmlApplicationContext
  */
 
-//注释配置应用程序上下文、AnnotationConfigApplicationContext对注解Bean初始化
+/*
+ApplicationContext两个比较重要的实现类：AnnotationConfigApplicationContext 、 ClassPathXmlApplicationContext
+
+从ConfigurableApplicationContext开始介绍
+1. ConfigurableApplicationContext：继承了ApplicationContext接口，
+	增加了添加事件监听器、添加BeanFactoryPostProcessor、设置Environment，获取ConfigurableListableBeanFactory等功能
+2. AbstractApplicationContext：实现了ConfigurableApplicationContext接口
+3. GenericApplicationContext：继承了AbstractApplicationContext，实现了BeanDefinitionRegistry接口，拥有了所有ApplicationContext的功能，
+	并且可以注册BeanDefinition，注意这个类中有一个属性(DefaultListableBeanFactory beanFactory)
+4. AnnotationConfigRegistry：可以单独注册某个类为BeanDefinition（可以处理该类上的@Configuration注解，已经可以处理@Bean注解），同时可以扫描
+5. AnnotationConfigApplicationContext：继承了GenericApplicationContext，实现了AnnotationConfigRegistry接口，拥有了以上所有的功能
+
+注释配置应用程序上下文、AnnotationConfigApplicationContext对注解Bean初始化
+ */
 public class AnnotationConfigApplicationContext extends GenericApplicationContext implements AnnotationConfigRegistry {
 
 	//保存一个读取注解BeanDefinition 的读取器，并将其设置到容器中
@@ -68,8 +81,21 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	//默认构造函数，初始化一个空容器，容器不包含任何Bean信息，需要在稍后通过调用其register()
 	//方法注册配置类，并调用refresh()方法刷新容器，触发容器对注解Bean的载入、解析和注册过程
 	public AnnotationConfigApplicationContext() {
+		/**
+		 *	创建一个读取注解的Bean定义读取器
+		 *	什么是Bean定义？ BeanDefinition就是一个Bean的元数据信息，后面可以通过反射创建
+		 *	完成了Spring内部BeanDefinition的注册 （主要是后置处理器）
+		 */
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 		//ClassPathBeanDefinitionScanner  扫描
+		/**
+		 *	创建BeanDefinition扫描器
+		 *	可以用来扫描 包或者类，继而转换为BeanDefinition
+		 *
+		 * 	Spring默认的扫描包 不是这个scanner对象
+		 * 	而是自己new的一个ClassPathBeanDefinitionScanner
+		 * 	Spring在执行工程 后置处理器 ConfigurationClassPostProcessor时，去扫描包时会new一个
+		 */
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 
@@ -89,11 +115,16 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @param annotatedClasses one or more annotated classes,
 	 * e.g. {@link Configuration @Configuration} classes
 	 */
-	//最常用的构造函数，将涉及到的配置类传递给该构造函数，以实现将相应配置类中的Bean自动注册到容器中
+	/*  Spring3.0后就推荐使用注解的方式进行开发
+	 	最常用的构造函数，将涉及到的配置类传递给该构造函数，
+	 	以实现将相应配置类中的Bean自动注册到容器中
+	 */
 	public AnnotationConfigApplicationContext(Class<?>... annotatedClasses) {
-		//调用父类构造方法
+		//调用父类构造方法  完成BeanDefinitionReader、 BeanDefintionScanner、BeanDefinitionRegister创建
 		this();
+		// 注册我们的配置类
 		register(annotatedClasses);
+		// IoC容器刷新
 		refresh();
 	}
 
@@ -173,14 +204,18 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @see #scan(String...)
 	 * @see #refresh()
 	 */
-	//为容器注册一个要被处理的注解Bean，
-	// 新注册的Bean，必须手动调用容器的refresh()方法刷新容器，触发容器对新注册的Bean的处理
+	/*
+	   为容器注册一个要被处理的注解Bean，
+	   新注册的Bean，必须手动调用容器的refresh()方法刷新容器，触发容器对新注册的Bean的处理
+	 */
 	@Override
 	public void register(Class<?>... annotatedClasses) {
 		//必须至少指定一个带注释的类
 		Assert.notEmpty(annotatedClasses, "At least one annotated class must be specified");
-		//AnnotationConfigApplicationContext通过调用注解Bean定义读取器reader
-		// 	的register方法向容器注册指定的注解Bean
+		/*
+			AnnotationConfigApplicationContext通过 调用注解Bean定义读取器
+			reader的register方法向容器注册指定的注解Bean
+		 */
 		this.reader.register(annotatedClasses);
 	}
 
